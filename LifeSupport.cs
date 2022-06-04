@@ -7,17 +7,18 @@ using System;
 
 namespace Oxide.Plugins
 {
-    [Info("Life Support", "OG61", "1.5.0")]
-    [Description("Use reward points to prevent player from dying")]
+    [Info("Life Support", "OG61 and sri369", "1.6.0")]
+    [Description("Use economics to prevent player from dying")]
 
     //Change log
     //1.4.0 Moved code from OnPlayerDeath to SaveLife and call from OnPlayerDeath and OnPlayerWound (when health below 1)
     //1.5.0 Added ability to suspend LifeSupport in DangerousTreasures zones and added support for zone manager.
+    //1.6.0 Replaced server rewards with economics
     public class LifeSupport : CovalencePlugin
     {
         #region Plugin References
         [PluginReference]
-        private Plugin RaidableBases, ServerRewards, DangerousTreasures, ZoneManager;
+        private Plugin RaidableBases, DangerousTreasures, ZoneManager, Economics;
         
         #endregion
 
@@ -34,9 +35,9 @@ namespace Oxide.Plugins
         {
             [JsonProperty(PropertyName = "Use Zone Manager (true/false)")]
             public bool UseZoneManager = false;
-
-            [JsonProperty(PropertyName = "Use Server Rewards (true/false)")]
-            public bool UseServerRewards = false;
+			
+			[JsonProperty(PropertyName = "Use Economics (true/false)")]
+            public bool UseEconomics = true;
 
             [JsonProperty(PropertyName = "Disable LifeSupport in RaidableBases Zones (true/false)")]
             public bool UseRaidableBases = false;
@@ -53,8 +54,8 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "Permissions and cost", ObjectCreationHandling = ObjectCreationHandling.Replace)]
             public List<Perms> perms = new List<Perms>()
             {
-                new Perms() {Permission = "lifesupport.default", Cost = 400 },
-                new Perms() {Permission = "lifesupport.vip", Cost = 200},
+                new Perms() {Permission = "lifesupport.default", Cost = 1000 },
+                new Perms() {Permission = "lifesupport.vip", Cost = 500},
                 new Perms() {Permission = "lifesupport.admin", Cost = 0}
             };
             
@@ -99,9 +100,9 @@ namespace Oxide.Plugins
                         DangerousTreasures = plugin;
                         break;
                     }
-                case "ServerRewards":
+				case "Economics":
                     {
-                        ServerRewards = plugin;
+                        Economics = plugin;
                         break;
                     }
                 case "ZoneManager":
@@ -126,9 +127,9 @@ namespace Oxide.Plugins
                         DangerousTreasures = null;
                         break;
                     }
-                case "ServerRewards":
+				case "Economics":
                     {
-                        ServerRewards = null;
+                        Economics = null;
                         break;
                     }
                 case "ZoneManager":
@@ -324,20 +325,20 @@ namespace Oxide.Plugins
                     }
                 });
                 if (!preventDeath) return null; //Player does not have permission so exit
-                if (config.UseServerRewards)
+				if (config.UseEconomics)
                 {
-                    if (ServerRewards == null || !ServerRewards.IsLoaded)
-                    {//Server Rewards enabled but not present. Log error and return
-                        Message("ServerRewardsNull", player.IPlayer);
-                        Logger("ServerRewardsNull");
+                    if (Economics == null || !Economics.IsLoaded)
+                    {//Economics enabled but not present. Log error and return
+                        Message("EconomicsNull", player.IPlayer);
+                        Logger("EconomicsNull");
                         return null;
                     }
                     if (costOfLife > 0)
                     {//object object CheckPoints(ulong ID) // Returns int, or null if no data is saved
-                        var rp = ServerRewards.Call("CheckPoints", player.userID);
-                        if ((rp is int ? (int)rp : 0) >= costOfLife)
+                        int ecoBalance = Convert.ToInt32(Math.Floor(Convert.ToDouble(Economics.Call("Balance", player.userID))));
+                        if (ecoBalance >= costOfLife)
                         {
-                            ServerRewards.Call("TakePoints", player.UserIDString, costOfLife);
+                            Economics.Call("Withdraw", player.UserIDString, Convert.ToDouble(costOfLife));
                         }
                         else
                         {
@@ -349,10 +350,10 @@ namespace Oxide.Plugins
                     Message("SavedYourLifeCost", player.IPlayer, costOfLife);
                     Logger("SavedLife", player.IPlayer, costOfLife);
                 }
-                else //Not using ServerRewards
+                else //Not using Economics
                 {
                     Message("SavedYourLife", player.IPlayer);
-                    Logger("ServerRewardsInactiveSavedLife", player.IPlayer);
+                    Logger("EconomicsInactiveSavedLife", player.IPlayer);
                 }
                 player.health = 100f;
                 if (player.IsWounded()) player.StopWounded();
@@ -427,7 +428,7 @@ namespace Oxide.Plugins
             else if(hasPermission) 
             {
                 data.activatedIDs.Add(player.Id);
-                Message("Activated", player,  config.UseServerRewards ? costOfLife: 0);
+                Message("Activated", player,  config.UseEconomics ? costOfLife: 0);
                 Logger("Activated", player, costOfLife);
                 SaveData();
             }
@@ -513,8 +514,8 @@ namespace Oxide.Plugins
                 ["DTZone"] = "LifeSupport disabled in Dangerous Treasures zone",
                 ["ZMZone"] = "LifeSupport disabled in Zone Manager zone",
                 ["CanceledByPlugin"] = "LifeSupport canceled by another plugin",
-                ["ServerRewardsNull"] = "LifeSupport could not save your life. \n"+
-                "ServerRewards is enabled but the ServerRewards plugin is not available.",
+				["EconomicsNull"] = "LifeSupport could not save your life. \n"+
+                "Economics is enabled but the Economics plugin is not available.",
                 ["DontUnderstand"] = "Don't Understand.",
                 ["DiedNotActive"] = "Player died. LifeSupport not active.",
                 ["ConfigError"] = "Error reading config file. Defaut configuration used.",
@@ -522,11 +523,11 @@ namespace Oxide.Plugins
                 ["CantAfford"] = "Sorry, insufficent reward points to use LifeSupport.",
                 ["DiedCouldntAfford"] = "Player died. Could not afford LifeSupport.",
                 ["Deactivated"] = "Life Support de-activated.",
-                ["Activated"] = "Life Support activated.  Cost per life {0} RP",
-                ["SavedYourLifeCost"] = "Life Support saved your life. Cost: {0} RP",
+                ["Activated"] = "Life Support activated.  Cost per life {0} coins",
+                ["SavedYourLifeCost"] = "Life Support saved your life. Cost: {0} coins",
                 ["SavedYourLife"] = "Life Support saved your life.",
-                ["SavedLife"] = "Prevented death. Cost: {0} RP",
-                ["ServerRewardsInactiveSavedLife"] = "Prevented death. Server Rewards inactive",
+                ["SavedLife"] = "Prevented death. Cost: {0} coins",
+				["EconomicsInactiveSavedLife"] = "Prevented death. Economics inactive",
                 ["Help"] = "When active LifeSupport will prevent a player's death if\n" +
                 "they have permission and a sufficent amount of reward points \n" +
                 "or if Server Rewards is turned off. \n" +
