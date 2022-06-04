@@ -35,7 +35,7 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "Use Zone Manager (true/false)")]
             public bool UseZoneManager = false;
 			
-			[JsonProperty(PropertyName = "Use Economics (true/false)")]
+            [JsonProperty(PropertyName = "Use Economics (true/false)")]
             public bool UseEconomics = true;
 
             [JsonProperty(PropertyName = "Disable LifeSupport in RaidableBases Zones (true/false)")]
@@ -99,7 +99,7 @@ namespace Oxide.Plugins
                         DangerousTreasures = plugin;
                         break;
                     }
-				case "Economics":
+                case "Economics":
                     {
                         Economics = plugin;
                         break;
@@ -126,7 +126,7 @@ namespace Oxide.Plugins
                         DangerousTreasures = null;
                         break;
                     }
-				case "Economics":
+                case "Economics":
                     {
                         Economics = null;
                         break;
@@ -327,13 +327,15 @@ namespace Oxide.Plugins
 				if (config.UseEconomics)
                 {
                     if (Economics == null || !Economics.IsLoaded)
-                    {//Economics enabled but not present. Log error and return
+                    {
+		    	//Economics enabled but not present. Log error and return
                         Message("EconomicsNull", player.IPlayer);
                         Logger("EconomicsNull");
                         return null;
                     }
                     if (costOfLife > 0)
-                    {//object object CheckPoints(ulong ID) // Returns int, or null if no data is saved
+                    {
+		    	//object object CheckPoints(ulong ID) // Returns int, or null if no data is saved
                         int ecoBalance = Convert.ToInt32(Math.Floor(Convert.ToDouble(Economics.Call("Balance", player.userID))));
                         if (ecoBalance >= costOfLife)
                         {
