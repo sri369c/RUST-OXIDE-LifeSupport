@@ -13,7 +13,6 @@ namespace Oxide.Plugins
     //Change log
     //1.4.0 Moved code from OnPlayerDeath to SaveLife and call from OnPlayerDeath and OnPlayerWound (when health below 1)
     //1.5.0 Added ability to suspend LifeSupport in DangerousTreasures zones and added support for zone manager.
-    //1.6.0 Replaced server rewards with economics
     public class LifeSupport : CovalencePlugin
     {
         #region Plugin References
@@ -54,8 +53,8 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "Permissions and cost", ObjectCreationHandling = ObjectCreationHandling.Replace)]
             public List<Perms> perms = new List<Perms>()
             {
-                new Perms() {Permission = "lifesupport.default", Cost = 1000 },
-                new Perms() {Permission = "lifesupport.vip", Cost = 500},
+                new Perms() {Permission = "lifesupport.default", Cost = 400 },
+                new Perms() {Permission = "lifesupport.vip", Cost = 200},
                 new Perms() {Permission = "lifesupport.admin", Cost = 0}
             };
             
@@ -520,7 +519,7 @@ namespace Oxide.Plugins
                 ["DiedNotActive"] = "Player died. LifeSupport not active.",
                 ["ConfigError"] = "Error reading config file. Defaut configuration used.",
                 ["NoPermission"] = "You do not have permission to use this command.",
-                ["CantAfford"] = "Sorry, insufficent reward points to use LifeSupport.",
+                ["CantAfford"] = "Sorry, insufficent coins to use LifeSupport.",
                 ["DiedCouldntAfford"] = "Player died. Could not afford LifeSupport.",
                 ["Deactivated"] = "Life Support de-activated.",
                 ["Activated"] = "Life Support activated.  Cost per life {0} coins",
@@ -529,8 +528,8 @@ namespace Oxide.Plugins
                 ["SavedLife"] = "Prevented death. Cost: {0} coins",
 				["EconomicsInactiveSavedLife"] = "Prevented death. Economics inactive",
                 ["Help"] = "When active LifeSupport will prevent a player's death if\n" +
-                "they have permission and a sufficent amount of reward points \n" +
-                "or if Server Rewards is turned off. \n" +
+                "they have permission and a sufficent amount of coins \n" +
+                "or if Economics is turned off. \n" +
                 "It also prevents dropping their active item.\n" +
                 "Type /LifeSupport in chat to toggle on and off."
              }, this);
